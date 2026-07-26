@@ -1,7 +1,32 @@
 import React from 'react';
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
+import { createClient } from '@/lib/supabase/server';
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
+  const supabase = createClient();
+
+  // 1. Get active user session
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect('/login');
+  }
+
+  // 2. Query public profile for role validation
+  const { data: profile } = await supabase.from('users').select('*').eq('id', user.id).single();
+
+  if (!profile || !['OWNER', 'MANAGER', 'STAFF'].includes(profile.role)) {
+    // Force logout and redirect if user has an invalid role or no profile
+    await supabase.auth.signOut();
+    redirect('/login?error=unauthorized_role');
+  }
+
+  const isOwnerOrManager = ['OWNER', 'MANAGER'].includes(profile.role);
+  const nameInitials = profile.name ? profile.name[0].toUpperCase() : 'U';
+
   return (
     <div className="flex min-h-screen bg-slate-900 text-slate-100 font-sans">
       {/* Sidebar navigation */}
@@ -32,11 +57,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </div>
 
-        {/* Store Profile Selector (Multi-store configured) */}
+        {/* Store Profile Selector */}
         <div className="mt-6 rounded-lg bg-slate-900/80 p-3 border border-slate-800 flex items-center justify-between">
           <div className="truncate">
             <span className="block text-[10px] font-medium text-slate-500 uppercase">
-              Current Location
+              Location Portal
             </span>
             <span className="text-xs font-bold text-slate-200">Main Pharmacy (Sector 12)</span>
           </div>
@@ -54,13 +79,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </svg>
         </div>
 
-        {/* Nav list */}
+        {/* Nav list: Conditionally rendered based on user role */}
         <nav className="mt-8 flex-1 space-y-1.5 text-slate-400">
           <Link
             href="/dashboard"
             className="flex items-center gap-3 px-3 py-2 text-sm font-semibold rounded-lg bg-slate-900 text-white border-l-2 border-indigo-600 transition-all"
           >
-            <span className="h-4 w-4 shrink-0">📊</span>
+            <span className="h-4 w-4 shrink-0 text-center">📊</span>
             Dashboard
           </Link>
           <Link
@@ -84,38 +109,46 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <span className="h-4 w-4 shrink-0">📦</span>
             Purchase Orders
           </Link>
-          <Link
-            href="/dashboard/reports"
-            className="flex items-center gap-3 px-3 py-2 text-sm font-semibold rounded-lg hover:bg-slate-900 hover:text-white transition-all"
-          >
-            <span className="h-4 w-4 shrink-0">📈</span>
-            Reports (GST, P&L)
-          </Link>
-          <Link
-            href="/dashboard/users"
-            className="flex items-center gap-3 px-3 py-2 text-sm font-semibold rounded-lg hover:bg-slate-900 hover:text-white transition-all"
-          >
-            <span className="h-4 w-4 shrink-0">👥</span>
-            User Roles
-          </Link>
+
+          {/* Restricted Admin Menu Items */}
+          {isOwnerOrManager && (
+            <>
+              <Link
+                href="/dashboard/reports"
+                className="flex items-center gap-3 px-3 py-2 text-sm font-semibold rounded-lg hover:bg-slate-900 hover:text-white transition-all"
+              >
+                <span className="h-4 w-4 shrink-0">📈</span>
+                Reports (GST, P&L)
+              </Link>
+              <Link
+                href="/dashboard/users"
+                className="flex items-center gap-3 px-3 py-2 text-sm font-semibold rounded-lg hover:bg-slate-900 hover:text-white transition-all"
+              >
+                <span className="h-4 w-4 shrink-0">👥</span>
+                User Roles
+              </Link>
+            </>
+          )}
         </nav>
 
-        {/* User footer */}
+        {/* User profile footer with server sign-out */}
         <div className="mt-auto border-t border-slate-800 pt-4 flex items-center gap-3">
           <div className="h-9 w-9 rounded-full bg-slate-800 flex items-center justify-center font-bold text-indigo-400">
-            A
+            {nameInitials}
           </div>
           <div className="truncate flex-1">
-            <span className="block text-xs font-bold text-slate-200">Amit Sati</span>
-            <span className="block text-[10px] text-slate-500 font-semibold">OWNER (ADMIN)</span>
+            <span className="block text-xs font-bold text-slate-200">{profile.name}</span>
+            <span className="block text-[10px] text-slate-500 font-semibold">{profile.role}</span>
           </div>
-          <Link
-            href="/"
-            className="p-1.5 text-slate-500 hover:text-red-400 transition-colors"
-            title="Exit Portal"
-          >
-            🔌
-          </Link>
+          <form action="/api/auth/signout" method="post" className="m-0 p-0">
+            <button
+              type="submit"
+              className="p-1.5 text-slate-500 hover:text-red-400 transition-colors flex items-center justify-center"
+              title="Sign Out"
+            >
+              🔌
+            </button>
+          </form>
         </div>
       </aside>
 
@@ -131,7 +164,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div className="flex items-center gap-6">
             <div className="text-right">
               <span className="block text-[10px] font-semibold text-slate-500">
-                SYSTEM TIME (IST)
+                SYSTEM DATE (IST)
               </span>
               <span className="text-xs font-mono font-bold text-slate-300">
                 {new Date().toLocaleDateString('en-GB', {
