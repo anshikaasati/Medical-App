@@ -14,8 +14,10 @@ const heading = Outfit({
 });
 
 export const metadata: Metadata = {
-  title: 'Next-Gen Marg ERP — Pharmacy Management',
-  description: 'Smart cloud-based medicine ordering and prescription diagnostics',
+  title: 'MargPharmacy ERP — Next-Gen Retail Command Center',
+  description:
+    'AI-powered prescription OCR validation, CGST/SGST tax splitting invoice ledger, and atomic POS checkouts.',
+  icons: { icon: '/favicon.ico' },
 };
 
 export default function RootLayout({
