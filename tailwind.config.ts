@@ -16,6 +16,14 @@ const config: Config = {
       },
     },
     extend: {
+      fontFamily: {
+        sans: ['var(--font-sans)', 'sans-serif'],
+        heading: ['var(--font-heading)', 'sans-serif'],
+      },
+      boxShadow: {
+        premium: '0 10px 30px -10px rgba(13, 148, 136, 0.08), 0 1px 3px rgba(0, 0, 0, 0.02)',
+        glow: '0 0 15px 0px rgba(13, 148, 136, 0.15)',
+      },
       colors: {
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
