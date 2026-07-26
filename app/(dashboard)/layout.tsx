@@ -2,6 +2,29 @@ import React from 'react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import { MOCK_NOTIFICATIONS } from '@/services/mock-data';
+
+// Nav item definition
+interface NavItem {
+  href: string;
+  label: string;
+  icon: string;
+  ownerOnly?: boolean;
+}
+
+const NAV_ITEMS: NavItem[] = [
+  { href: '/dashboard', label: 'Dashboard', icon: '📊' },
+  { href: '/dashboard/billing', label: 'POS Billing', icon: '🛒' },
+  { href: '/dashboard/inventory', label: 'Inventory', icon: '💊' },
+  { href: '/dashboard/inventory/expiring', label: 'Expiry Alerts', icon: '⏳' },
+  { href: '/dashboard/purchases', label: 'Purchase Orders', icon: '📦' },
+  { href: '/dashboard/suppliers', label: 'Suppliers', icon: '🏭' },
+  { href: '/dashboard/customers', label: 'Customers', icon: '👥' },
+  { href: '/dashboard/reports', label: 'Reports', icon: '📈', ownerOnly: true },
+  { href: '/dashboard/notifications', label: 'Notifications', icon: '🔔' },
+  { href: '/dashboard/settings', label: 'Settings', icon: '⚙️', ownerOnly: true },
+  { href: '/dashboard/settings/users', label: 'Staff & Roles', icon: '🧑‍💼', ownerOnly: true },
+];
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const supabase = createClient();
@@ -26,6 +49,12 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   const isOwnerOrManager = ['OWNER', 'MANAGER'].includes(profile.role);
   const nameInitials = profile.name ? profile.name[0].toUpperCase() : 'U';
+
+  // Unread notification count (mock — replace with DB query)
+  const unreadCount = MOCK_NOTIFICATIONS.filter((n) => !n.read).length;
+
+  // Visible nav items based on role
+  const visibleNav = NAV_ITEMS.filter((item) => !item.ownerOnly || isOwnerOrManager);
 
   return (
     <div className="flex min-h-screen bg-slate-900 text-slate-100 font-sans">
@@ -57,13 +86,13 @@ export default async function DashboardLayout({ children }: { children: React.Re
           </div>
         </div>
 
-        {/* Store Profile Selector */}
+        {/* Store Profile */}
         <div className="mt-6 rounded-lg bg-slate-900/80 p-3 border border-slate-800 flex items-center justify-between">
           <div className="truncate">
             <span className="block text-[10px] font-medium text-slate-500 uppercase">
               Location Portal
             </span>
-            <span className="text-xs font-bold text-slate-200">Main Pharmacy (Sector 12)</span>
+            <span className="text-xs font-bold text-slate-200">Main Pharmacy</span>
           </div>
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -79,61 +108,31 @@ export default async function DashboardLayout({ children }: { children: React.Re
           </svg>
         </div>
 
-        {/* Nav list: Conditionally rendered based on user role */}
-        <nav className="mt-8 flex-1 space-y-1.5 text-slate-400">
-          <Link
-            href="/dashboard"
-            className="flex items-center gap-3 px-3 py-2 text-sm font-semibold rounded-lg hover:bg-slate-900 hover:text-white transition-all"
-          >
-            <span className="h-4 w-4 shrink-0 text-center">📊</span>
-            Dashboard
-          </Link>
-          <Link
-            href="/dashboard/billing"
-            className="flex items-center gap-3 px-3 py-2 text-sm font-semibold rounded-lg hover:bg-slate-900 hover:text-white transition-all"
-          >
-            <span className="h-4 w-4 shrink-0">🛒</span>
-            POS Billing
-          </Link>
-          <Link
-            href="/dashboard/inventory"
-            className="flex items-center gap-3 px-3 py-2 text-sm font-semibold rounded-lg hover:bg-slate-900 hover:text-white transition-all"
-          >
-            <span className="h-4 w-4 shrink-0">💊</span>
-            Medicine Inventory
-          </Link>
-          <Link
-            href="/dashboard/inventory"
-            className="flex items-center gap-3 px-3 py-2 text-sm font-semibold rounded-lg hover:bg-slate-900 hover:text-white transition-all opacity-80"
-          >
-            <span className="h-4 w-4 shrink-0">📦</span>
-            Purchase Orders
-          </Link>
-
-          {/* Restricted Admin Menu Items */}
-          {isOwnerOrManager && (
-            <>
-              <Link
-                href="/dashboard"
-                className="flex items-center gap-3 px-3 py-2 text-sm font-semibold rounded-lg hover:bg-slate-900 hover:text-white transition-all opacity-80"
-              >
-                <span className="h-4 w-4 shrink-0">📈</span>
-                Reports (GST, P&L)
-              </Link>
-              <Link
-                href="/login"
-                className="flex items-center gap-3 px-3 py-2 text-sm font-semibold rounded-lg hover:bg-slate-900 hover:text-white transition-all opacity-80"
-              >
-                <span className="h-4 w-4 shrink-0">👥</span>
-                User Roles
-              </Link>
-            </>
-          )}
+        {/* Nav list */}
+        <nav className="mt-6 flex-1 space-y-0.5 text-slate-400 overflow-y-auto">
+          {visibleNav.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className="flex items-center justify-between gap-3 px-3 py-2 text-sm font-semibold rounded-lg hover:bg-slate-900 hover:text-white transition-all group"
+            >
+              <div className="flex items-center gap-3">
+                <span className="h-4 w-4 shrink-0 text-center">{item.icon}</span>
+                {item.label}
+              </div>
+              {/* Notification badge on notifications link */}
+              {item.href === '/dashboard/notifications' && unreadCount > 0 && (
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shrink-0">
+                  {unreadCount}
+                </span>
+              )}
+            </Link>
+          ))}
         </nav>
 
-        {/* User profile footer with server sign-out */}
+        {/* User profile footer */}
         <div className="mt-auto border-t border-slate-800 pt-4 flex items-center gap-3">
-          <div className="h-9 w-9 rounded-full bg-slate-800 flex items-center justify-center font-bold text-indigo-400">
+          <div className="h-9 w-9 rounded-full bg-slate-800 flex items-center justify-center font-bold text-indigo-400 shrink-0">
             {nameInitials}
           </div>
           <div className="truncate flex-1">
@@ -162,6 +161,33 @@ export default async function DashboardLayout({ children }: { children: React.Re
             </span>
           </div>
           <div className="flex items-center gap-6">
+            {/* Notification bell */}
+            <Link
+              href="/dashboard/notifications"
+              className="relative p-1.5 text-slate-400 hover:text-white transition-colors"
+              title="Notifications"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={1.5}
+                stroke="currentColor"
+                className="h-5 w-5"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0"
+                />
+              </svg>
+              {unreadCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white">
+                  {unreadCount}
+                </span>
+              )}
+            </Link>
+
             <div className="text-right">
               <span className="block text-[10px] font-semibold text-slate-500">
                 SYSTEM DATE (IST)

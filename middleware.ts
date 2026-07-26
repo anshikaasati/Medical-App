@@ -40,9 +40,49 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const url = new URL(request.url);
+  const path = url.pathname;
+
+  // 0. Setup Guard — if no OWNER exists and user is not on /setup, redirect there
+  //    This ensures the pharmacy owner can self-onboard without developer intervention.
+  if (path !== '/setup' && !path.startsWith('/api') && !path.startsWith('/_next')) {
+    try {
+      const { data: ownerRows } = await supabase
+        .from('users')
+        .select('id')
+        .eq('role', 'OWNER')
+        .limit(1);
+
+      // No owner found — redirect everyone to setup wizard (except if already on /setup)
+      if (ownerRows !== null && ownerRows.length === 0) {
+        return NextResponse.redirect(new URL('/setup', request.url));
+      }
+    } catch {
+      // If DB is unavailable or table doesn't exist, allow request to proceed
+      // The setup page itself handles this gracefully
+    }
+  }
+
+  // Prevent access to /setup once an owner exists
+  if (path === '/setup') {
+    try {
+      const { data: ownerRows } = await supabase
+        .from('users')
+        .select('id')
+        .eq('role', 'OWNER')
+        .limit(1);
+
+      if (ownerRows && ownerRows.length > 0) {
+        // Owner already exists — setup is complete, redirect to login or dashboard
+        return NextResponse.redirect(new URL(user ? '/dashboard' : '/login', request.url));
+      }
+    } catch {
+      // Allow setup page to proceed if DB is unavailable
+    }
+    return response;
+  }
 
   // 1. Protect Dashboard (Staff/Admin access only)
-  if (url.pathname.startsWith('/dashboard')) {
+  if (path.startsWith('/dashboard')) {
     if (!user) {
       return NextResponse.redirect(new URL('/login', request.url));
     }
@@ -61,14 +101,14 @@ export async function middleware(request: NextRequest) {
   }
 
   // 2. Protect Account Portal (Customer access only)
-  if (url.pathname.startsWith('/account')) {
+  if (path.startsWith('/account')) {
     if (!user) {
       return NextResponse.redirect(new URL('/login', request.url));
     }
   }
 
   // 3. Handle Logged-In User Redirects away from Login page
-  if (url.pathname === '/login' && user) {
+  if (path === '/login' && user) {
     const { data: profile } = await supabase
       .from('users')
       .select('role')

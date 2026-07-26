@@ -91,7 +91,7 @@ export default function DashboardLandingPage() {
           .select('current_stock, expiry_date');
 
         if (batchData && batchData.length > 0) {
-          const today = new Date('2026-07-27');
+          const today = new Date();
           let lowCount = 0;
           let expCount = 0;
 
@@ -112,17 +112,25 @@ export default function DashboardLandingPage() {
           setExpiringSoon(expCount || 8);
         }
 
-        // Query today's sales from bills table
+        // Query today's sales from sales_invoices (correct table name)
+        const todayStr = new Date().toISOString().split('T')[0];
         const { data: billData } = await supabase
-          .from('bills')
-          .select('total_amount_paise, subtotal_paise, total_tax_paise')
-          .eq('status', 'finalized');
+          .from('sales_invoices')
+          .select('total_amount_paise')
+          .eq('status', 'finalized')
+          .gte('created_at', `${todayStr}T00:00:00`)
+          .lte('created_at', `${todayStr}T23:59:59`);
 
         if (billData && billData.length > 0) {
-          const salesTotal = billData.reduce((sum, b) => sum + b.total_amount_paise, 0);
-          setTodaySales(salesTotal);
-          // Profit estimated at roughly 25% margin on top of cost
-          setTodayProfit(Math.round(salesTotal * 0.25));
+          const salesTotal = billData.reduce(
+            (sum: number, b: any) => sum + (b.total_amount_paise || 0),
+            0
+          );
+          if (salesTotal > 0) {
+            setTodaySales(salesTotal);
+            // Profit estimated at roughly 25% margin on top of cost
+            setTodayProfit(Math.round(salesTotal * 0.25));
+          }
         }
       } catch {
         // Silent catch fallback to seeds
