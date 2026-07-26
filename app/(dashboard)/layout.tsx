@@ -83,13 +83,13 @@ export default async function DashboardLayout({ children }: { children: React.Re
         <nav className="mt-8 flex-1 space-y-1.5 text-slate-400">
           <Link
             href="/dashboard"
-            className="flex items-center gap-3 px-3 py-2 text-sm font-semibold rounded-lg bg-slate-900 text-white border-l-2 border-indigo-600 transition-all"
+            className="flex items-center gap-3 px-3 py-2 text-sm font-semibold rounded-lg hover:bg-slate-900 hover:text-white transition-all"
           >
             <span className="h-4 w-4 shrink-0 text-center">📊</span>
             Dashboard
           </Link>
           <Link
-            href="/dashboard/pos"
+            href="/dashboard/billing"
             className="flex items-center gap-3 px-3 py-2 text-sm font-semibold rounded-lg hover:bg-slate-900 hover:text-white transition-all"
           >
             <span className="h-4 w-4 shrink-0">🛒</span>
@@ -103,8 +103,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
             Medicine Inventory
           </Link>
           <Link
-            href="/dashboard/purchases"
-            className="flex items-center gap-3 px-3 py-2 text-sm font-semibold rounded-lg hover:bg-slate-900 hover:text-white transition-all"
+            href="/dashboard/inventory"
+            className="flex items-center gap-3 px-3 py-2 text-sm font-semibold rounded-lg hover:bg-slate-900 hover:text-white transition-all opacity-80"
           >
             <span className="h-4 w-4 shrink-0">📦</span>
             Purchase Orders
@@ -114,15 +114,15 @@ export default async function DashboardLayout({ children }: { children: React.Re
           {isOwnerOrManager && (
             <>
               <Link
-                href="/dashboard/reports"
-                className="flex items-center gap-3 px-3 py-2 text-sm font-semibold rounded-lg hover:bg-slate-900 hover:text-white transition-all"
+                href="/dashboard"
+                className="flex items-center gap-3 px-3 py-2 text-sm font-semibold rounded-lg hover:bg-slate-900 hover:text-white transition-all opacity-80"
               >
                 <span className="h-4 w-4 shrink-0">📈</span>
                 Reports (GST, P&L)
               </Link>
               <Link
-                href="/dashboard/users"
-                className="flex items-center gap-3 px-3 py-2 text-sm font-semibold rounded-lg hover:bg-slate-900 hover:text-white transition-all"
+                href="/login"
+                className="flex items-center gap-3 px-3 py-2 text-sm font-semibold rounded-lg hover:bg-slate-900 hover:text-white transition-all opacity-80"
               >
                 <span className="h-4 w-4 shrink-0">👥</span>
                 User Roles

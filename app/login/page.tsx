@@ -10,6 +10,9 @@ function LoginForm() {
   const supabase = createClient();
 
   const [activeTab, setActiveTab] = useState<'staff' | 'customer'>('staff');
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [name, setName] = useState('');
+  const [selectedRole, setSelectedRole] = useState<'OWNER' | 'MANAGER' | 'STAFF'>('OWNER');
 
   // Form inputs
   const [email, setEmail] = useState('');
@@ -90,6 +93,49 @@ function LoginForm() {
     }
   };
 
+  const handleStaffSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setErrorMsg(null);
+    setSuccessMsg(null);
+
+    if (!email || !password || !name) {
+      setErrorMsg('Please fill in your name, email, and password.');
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            role: selectedRole,
+            name: name,
+          },
+        },
+      });
+
+      if (error) {
+        setErrorMsg(error.message);
+        setLoading(false);
+        return;
+      }
+
+      if (data.user) {
+        setSuccessMsg('Staff account created successfully! You can now log in.');
+        setIsSignUp(false);
+        setName('');
+        setPassword('');
+      }
+    } catch {
+      setErrorMsg('An unexpected error occurred during account registration.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleCustomerLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -157,36 +203,38 @@ function LoginForm() {
         {/* Auth Box */}
         <div className="relative rounded-2xl border border-slate-800 bg-slate-950/80 p-8 shadow-2xl backdrop-blur-lg">
           {/* Tab Selector */}
-          <div className="grid grid-cols-2 gap-1 rounded-xl bg-slate-900 p-1 mb-6 border border-slate-800">
-            <button
-              onClick={() => {
-                setActiveTab('staff');
-                setErrorMsg(null);
-                setSuccessMsg(null);
-              }}
-              className={`rounded-lg py-2.5 text-xs font-bold transition-all ${
-                activeTab === 'staff'
-                  ? 'bg-emerald-600 text-white shadow-sm'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              Pharmacy Staff
-            </button>
-            <button
-              onClick={() => {
-                setActiveTab('customer');
-                setErrorMsg(null);
-                setSuccessMsg(null);
-              }}
-              className={`rounded-lg py-2.5 text-xs font-bold transition-all ${
-                activeTab === 'customer'
-                  ? 'bg-emerald-600 text-white shadow-sm'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              Customer Sign-In
-            </button>
-          </div>
+          {!isSignUp && (
+            <div className="grid grid-cols-2 gap-1 rounded-xl bg-slate-900 p-1 mb-6 border border-slate-800">
+              <button
+                onClick={() => {
+                  setActiveTab('staff');
+                  setErrorMsg(null);
+                  setSuccessMsg(null);
+                }}
+                className={`rounded-lg py-2.5 text-xs font-bold transition-all ${
+                  activeTab === 'staff'
+                    ? 'bg-emerald-600 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                Pharmacy Staff
+              </button>
+              <button
+                onClick={() => {
+                  setActiveTab('customer');
+                  setErrorMsg(null);
+                  setSuccessMsg(null);
+                }}
+                className={`rounded-lg py-2.5 text-xs font-bold transition-all ${
+                  activeTab === 'customer'
+                    ? 'bg-emerald-600 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                Customer Sign-In
+              </button>
+            </div>
+          )}
 
           {/* Toast / Message Alerts */}
           {errorMsg && (
@@ -205,58 +253,164 @@ function LoginForm() {
 
           {/* Forms */}
           {activeTab === 'staff' ? (
-            <form onSubmit={handleStaffLogin} className="space-y-4">
-              <div>
-                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
-                  Staff Email Address
-                </label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="name@pharmacy.com"
-                  required
-                  className="w-full rounded-lg border border-slate-800 bg-slate-900/60 px-4 py-3 text-sm text-white placeholder-slate-500 focus:border-emerald-500 focus:outline-none transition-colors"
-                />
-              </div>
+            isSignUp ? (
+              <form onSubmit={handleStaffSignUp} className="space-y-4">
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                    Full Name
+                  </label>
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Dr. Anshika Asati"
+                    required
+                    className="w-full rounded-lg border border-slate-800 bg-slate-900/60 px-4 py-3 text-sm text-white placeholder-slate-500 focus:border-emerald-500 focus:outline-none transition-colors"
+                  />
+                </div>
 
-              <div>
-                <div className="flex justify-between items-center mb-1.5">
-                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                    Staff Email Address
+                  </label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="name@pharmacy.com"
+                    required
+                    className="w-full rounded-lg border border-slate-800 bg-slate-900/60 px-4 py-3 text-sm text-white placeholder-slate-500 focus:border-emerald-500 focus:outline-none transition-colors"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
                     Password
                   </label>
-                  <a
-                    href="#"
-                    className="text-[10px] font-semibold text-emerald-500 hover:underline"
-                  >
-                    Forgot?
-                  </a>
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    required
+                    className="w-full rounded-lg border border-slate-800 bg-slate-900/60 px-4 py-3 text-sm text-white placeholder-slate-500 focus:border-emerald-500 focus:outline-none transition-colors"
+                  />
                 </div>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  required
-                  className="w-full rounded-lg border border-slate-800 bg-slate-900/60 px-4 py-3 text-sm text-white placeholder-slate-500 focus:border-emerald-500 focus:outline-none transition-colors"
-                />
-              </div>
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full mt-6 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm py-3 transition-all flex items-center justify-center gap-2 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50"
-              >
-                {loading ? (
-                  <>
-                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                    Verifying Credentials...
-                  </>
-                ) : (
-                  'Login to ERP'
-                )}
-              </button>
-            </form>
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                    Assigned Staff Role
+                  </label>
+                  <select
+                    value={selectedRole}
+                    onChange={(e) =>
+                      setSelectedRole(e.target.value as 'OWNER' | 'MANAGER' | 'STAFF')
+                    }
+                    className="w-full rounded-lg border border-slate-800 bg-slate-900 px-4 py-3 text-sm text-white focus:border-emerald-500 focus:outline-none transition-colors"
+                  >
+                    <option value="OWNER">Owner</option>
+                    <option value="MANAGER">Manager</option>
+                    <option value="STAFF">Pharmacy Staff</option>
+                  </select>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full mt-6 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm py-3 transition-all flex items-center justify-center gap-2 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50"
+                >
+                  {loading ? (
+                    <>
+                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                      Registering Account...
+                    </>
+                  ) : (
+                    'Create Staff Account'
+                  )}
+                </button>
+
+                <div className="text-center mt-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsSignUp(false);
+                      setErrorMsg(null);
+                      setSuccessMsg(null);
+                    }}
+                    className="text-xs font-semibold text-slate-400 hover:text-white transition-colors"
+                  >
+                    Already have an account? Sign In
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <form onSubmit={handleStaffLogin} className="space-y-4">
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                    Staff Email Address
+                  </label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="name@pharmacy.com"
+                    required
+                    className="w-full rounded-lg border border-slate-800 bg-slate-900/60 px-4 py-3 text-sm text-white placeholder-slate-500 focus:border-emerald-500 focus:outline-none transition-colors"
+                  />
+                </div>
+
+                <div>
+                  <div className="flex justify-between items-center mb-1.5">
+                    <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                      Password
+                    </label>
+                    <a
+                      href="#"
+                      className="text-[10px] font-semibold text-emerald-500 hover:underline"
+                    >
+                      Forgot?
+                    </a>
+                  </div>
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    required
+                    className="w-full rounded-lg border border-slate-800 bg-slate-900/60 px-4 py-3 text-sm text-white placeholder-slate-500 focus:border-emerald-500 focus:outline-none transition-colors"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full mt-6 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm py-3 transition-all flex items-center justify-center gap-2 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50"
+                >
+                  {loading ? (
+                    <>
+                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                      Verifying Credentials...
+                    </>
+                  ) : (
+                    'Login to ERP'
+                  )}
+                </button>
+
+                <div className="text-center mt-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsSignUp(true);
+                      setErrorMsg(null);
+                      setSuccessMsg(null);
+                    }}
+                    className="text-xs font-semibold text-slate-400 hover:text-white transition-colors"
+                  >
+                    Need a staff account? Register here
+                  </button>
+                </div>
+              </form>
+            )
           ) : (
             <form onSubmit={handleCustomerLogin} className="space-y-4">
               <div>
